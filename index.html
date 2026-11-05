@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Portofolio L Yuda Rahmani Karnaen, full stack developer. Jelajahi kebun pixel art berisi proyek dan keahliannya, atau baca catatannya langsung.">
+<meta property="og:title" content="Kebun Yuda">
+<meta property="og:description" content="Portofolio L Yuda Rahmani Karnaen, full stack developer, dalam bentuk kebun pixel art yang bisa dijelajahi.">
+<title>Kebun Yuda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,600;1,400&family=Pixelify+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: the playable farm is the hero, framed like a console screen on a wooden sign; the same content is written out below as a farmer's ledger. */
+:root{
+  color-scheme:dark;
+  --soil:#2c2118; --soil-2:#3a2b1e;
+  --wood:#8a5a2e; --wood-hi:#b9803f; --wood-lo:#5a3819;
+  --paper:#f4e4b4; --paper-2:#e9d394; --ink:#3a2613; --ink-2:#6d4f2c;
+  --padi:#f2b632; --leaf:#4c8f2f; --leaf-hi:#8fd052; --sky:#7cc9e6; --chili:#c8452f;
+  --px:'Pixelify Sans','Courier New',monospace;
+  --body:'Bitter',Georgia,'Times New Roman',serif;
+}
+*{box-sizing:border-box}
+html{background:var(--soil)}
+body{
+  margin:0;background-color:var(--soil);color:var(--paper);font:400 17px/1.6 var(--body);
+  background-image:linear-gradient(var(--soil-2) 2px,transparent 2px);background-size:100% 12px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;
+}
+.wrap{max-width:1120px;margin-inline:auto;display:grid;gap:28px}
+h1,h2,h3{font-family:var(--px);font-weight:700;margin:0;text-wrap:balance;line-height:1.1}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+
+/* Sign */
+.sign{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:flex-end;justify-content:space-between}
+.sign h1{font-size:clamp(44px,8vw,84px);color:var(--padi);text-shadow:4px 4px 0 var(--wood-lo)}
+.sign p{margin:6px 0 0;max-width:56ch;color:var(--paper)}
+.btn{
+  font-family:var(--px);font-weight:500;font-size:18px;line-height:1.1;background:var(--paper);color:var(--ink);border:0;padding:9px 14px;
+  box-shadow:0 -3px 0 var(--wood-lo),0 3px 0 var(--wood-lo),-3px 0 0 var(--wood-lo),3px 0 0 var(--wood-lo),inset 0 -3px 0 var(--paper-2);
+}
+.btn:hover{background:#fff4cf}
+.btn:active{transform:translateY(2px)}
+.btn[aria-pressed="true"]{background:var(--padi)}
+
+/* Screen */
+.console{background:var(--wood);padding:10px;box-shadow:0 -6px 0 var(--wood-lo),0 6px 0 var(--wood-lo),-6px 0 0 var(--wood-lo),6px 0 0 var(--wood-lo),inset 0 3px 0 var(--wood-hi);min-width:0}
+.screen{position:relative;overflow:hidden;background:#3f8a3a;height:clamp(380px,66vh,640px);touch-action:manipulation}
+canvas#game{display:block;width:100%;height:100%;image-rendering:pixelated;cursor:pointer}
+.hud{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none;z-index:5}
+.plate{font-family:var(--px);background:var(--paper);color:var(--ink);padding:5px 10px;line-height:1.15;box-shadow:0 -3px 0 var(--wood-lo),0 3px 0 var(--wood-lo),-3px 0 0 var(--wood-lo),3px 0 0 var(--wood-lo);font-variant-numeric:tabular-nums}
+.plate b{display:block;font-size:17px;font-weight:700}
+.plate span{font-size:15px;color:var(--ink-2)}
+.tag{
+  position:absolute;left:0;top:0;z-index:3;font-family:var(--px);font-weight:500;font-size:15px;line-height:1;white-space:nowrap;
+  background:var(--wood-lo);color:var(--paper);border:0;padding:4px 7px;box-shadow:0 2px 0 #2a190b;will-change:transform;
+}
+.tag:hover{background:var(--chili)}
+.prompt{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:5;white-space:nowrap}
+.prompt kbd{font:inherit;background:var(--ink);color:var(--paper);padding:0 6px;margin-right:6px}
+.dialog{
+  position:absolute;left:12px;right:12px;bottom:12px;z-index:6;max-width:720px;margin-inline:auto;max-height:72%;overflow:auto;
+  background:var(--paper);color:var(--ink);padding:12px 16px 10px;
+  box-shadow:0 -4px 0 var(--wood-lo),0 4px 0 var(--wood-lo),-4px 0 0 var(--wood-lo),4px 0 0 var(--wood-lo),inset 0 0 0 3px var(--paper-2);
+}
+.dialog h3{font-size:20px;color:var(--chili);margin-bottom:4px}
+.dialog p{margin:0;font:500 19px/1.32 var(--px);min-height:2.6em}
+.dialog .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;align-items:center;margin-top:10px}
+.dialog .btn{font-size:16px;padding:5px 10px;box-shadow:0 0 0 3px var(--wood-lo)}
+.dialog .btn.go{background:var(--padi)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.tools{display:flex;flex-wrap:wrap;gap:12px;padding:14px 4px 6px;align-items:center}
+.tools .spacer{flex:1 1 auto}
+
+/* Ledger */
+.ledger{background:var(--paper);color:var(--ink);padding:clamp(20px,4vw,44px);display:grid;gap:40px;box-shadow:0 -6px 0 var(--wood-lo),0 6px 0 var(--wood-lo),-6px 0 0 var(--wood-lo),6px 0 0 var(--wood-lo)}
+.ledger h2{font-size:clamp(30px,4.4vw,44px);color:var(--wood-lo)}
+.ledger a{color:var(--leaf)}
+.section-head{display:grid;gap:4px;margin-bottom:18px}
+.section-head p{margin:0;color:var(--ink-2);max-width:62ch}
+.about{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:28px;align-items:start}
+.about p{margin:0 0 12px;max-width:62ch}
+.facts{margin:0;display:grid;gap:0;font-size:16px}
+.facts div{display:grid;grid-template-columns:7.5em minmax(0,1fr);gap:8px;padding:8px 0;border-bottom:2px dotted var(--ink-2)}
+.facts dt{font-family:var(--px);font-weight:700}
+.facts dd{margin:0}
+.projects{display:grid;gap:0}
+.project{display:grid;grid-template-columns:96px minmax(0,1fr);gap:20px;padding:22px 0;border-top:3px solid var(--paper-2)}
+.project:first-child{border-top:0;padding-top:0}
+.project canvas,.crop canvas{image-rendering:pixelated;display:block}
+.project canvas{width:96px;height:96px;background:#7a4f2d}
+.project h3{font-size:26px;color:var(--ink)}
+.project p{margin:8px 0 0;max-width:66ch}
+.stage{display:inline-block;font:700 15px/1 var(--px);padding:4px 8px;margin-top:8px;color:var(--ink);background:var(--padi)}
+.stage.tumbuh{background:var(--leaf-hi)}
+.stage.bibit{background:var(--sky)}
+.chips{list-style:none;display:flex;flex-wrap:wrap;gap:6px;padding:0;margin:12px 0 0}
+.chips li{font:500 15px/1 var(--px);padding:4px 7px;background:var(--paper-2)}
+.crops{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:18px 28px}
+.crop{display:grid;grid-template-columns:48px minmax(0,1fr);gap:12px;align-items:start}
+.crop canvas{width:48px;height:48px;background:#7a4f2d}
+.crop h3{font-size:20px}
+.crop h3 small{font:400 14px var(--body);color:var(--ink-2);margin-left:4px}
+.crop p{margin:2px 0 0;font-size:15.5px;line-height:1.45}
+.crop.done canvas{outline:3px solid var(--padi)}
+.ledger-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:18px}
+.ledger-row .note{color:var(--ink-2);font-size:15.5px}
+.contact{margin:0;max-width:560px}
+.activities{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:24px 32px}
+.activity{min-width:0}
+.activity h3{font-size:22px}
+.activity p{margin:6px 0 0;font-size:16px;line-height:1.5}
+.jobs{display:grid}
+.job{display:grid;grid-template-columns:11em minmax(0,1fr);gap:4px 20px;padding:16px 0;border-top:3px solid var(--paper-2)}
+.job:first-child{border-top:0;padding-top:0}
+.job time{font:500 17px/1.3 var(--px);color:var(--ink-2);font-variant-numeric:tabular-nums}
+.job h3{font-size:22px}
+.job h3 small{display:block;font:400 16px/1.4 var(--body);color:var(--ink-2);margin-top:2px}
+.job p{margin:6px 0 0;max-width:66ch}
+.kerja{margin-left:10px;font-size:15px;color:var(--ink-2)}
+.copy{margin-left:10px;font-size:14px;padding:2px 7px;box-shadow:0 0 0 2px var(--wood-lo)}
+.empty{color:var(--ink-2);font-style:italic}
+@media (max-width:720px){
+  body{font-size:16px}
+  .about{grid-template-columns:minmax(0,1fr)}
+  .project{grid-template-columns:64px minmax(0,1fr);gap:14px}
+  .project canvas{width:64px;height:64px}
+  .plate b{font-size:15px}.plate span{font-size:13px}
+  .tag{font-size:13px;padding:3px 5px}
+  .dialog{left:8px;right:8px;bottom:8px;padding:10px 12px 8px}
+  .dialog p{font-size:17px}
+  .tools{gap:10px}.btn{font-size:16px;padding:7px 10px}
+  .job{grid-template-columns:minmax(0,1fr)}
+  .kerja{display:block;margin:6px 0 0}
+}
+</style>
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="sign">
+    <div>
+      <h1>Kebun Yuda</h1>
+      <p>L Yuda Rahmani Karnaen, full stack developer dengan pengalaman 6+ tahun membangun sistem kesehatan publik Indonesia. Proyeknya tersimpan di bangunan kebun ini dan keahliannya tumbuh di ladang.</p>
+    </div>
+    <button class="btn" id="skip" type="button">Baca catatan kebun</button>
+  </header>
+
+  <section class="console" aria-label="Gim kebun">
+    <div class="screen" id="screen">
+      <canvas id="game" aria-label="Kebun pixel art dengan petani bercaping yang bisa digerakkan. Isi yang sama tersedia di catatan kebun di bawah."></canvas>
+      <div id="tags"></div>
+      <div class="hud">
+        <div class="plate"><b id="hudDate">-</b><span id="hudSeason">-</span></div>
+        <div class="plate"><b>Keranjang <span id="hudBasket" style="font-size:inherit;color:inherit">0/8</span></b><span>tanaman dipanen</span></div>
+      </div>
+      <button class="btn prompt" id="prompt" type="button" hidden></button>
+      <div class="dialog" id="dialog" hidden>
+        <h3 id="dTitle"></h3>
+        <p id="dText" aria-hidden="true"></p>
+        <div class="sr" id="dLive" aria-live="polite"></div>
+        <div class="row" id="dRow"></div>
+      </div>
+    </div>
+    <div class="tools" id="tools" role="group" aria-label="Pergi ke tempat">
+      <span class="spacer"></span>
+      <button class="btn" id="music" type="button" aria-pressed="false">Musik: mati</button>
+    </div>
+  </section>
+
+  <main class="ledger" id="catatan">
+    <section>
+      <div class="section-head"><h2>Si Pemilik Kebun</h2></div>
+      <div class="about">
+        <div>
+          <p>Yuda adalah full stack developer dengan pengalaman lebih dari 6 tahun membangun layanan backend dengan Node.js (Express, NestJS) dan Go, serta aplikasi web dengan React.</p>
+          <p>Sebagian besar karyanya ada di kesehatan publik Indonesia: sistem informasi malaria dan COVID-19, serta pertukaran data antara rekam medis elektronik, SATUSEHAT, dan DHIS2.</p>
+          <p>Kekuatannya ada di desain REST API, Clean Architecture, pemodelan data, dan dashboard analitik. Ia juga terbiasa memimpin pengerjaan backend dan frontend dalam tim.</p>
+        </div>
+        <dl class="facts">
+          <div><dt>Peran</dt><dd>Full Stack Developer</dd></div>
+          <div><dt>Domisili</dt><dd>Mataram, Indonesia</dd></div>
+          <div><dt>Pendidikan</dt><dd>S1 Ilmu Komputer, Universitas Bumigora Mataram (2017-2021)<br>RPL, SMKN 1 Selong (2014-2017)</dd></div>
+          <div><dt>Bahasa</dt><dd>Indonesia (ibu), Inggris (menengah)</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2>Musim Kerja</h2></div>
+      <div class="jobs" id="jobs"></div>
+    </section>
+
+    <section id="kegiatan">
+      <div class="section-head"><h2>Kegiatan di Bengkel</h2><p>Pekerjaan development yang dilakukan Yuda dari hari ke hari.</p></div>
+      <div class="activities" id="activities"></div>
+    </section>
+
+    <section id="hasil">
+      <div class="section-head"><h2>Hasil Kebun</h2><p>Tumbuh berarti sedang dikerjakan sekarang. Dipanen berarti sudah dibangun. Tiap tanda juga menunjukkan letaknya di kebun.</p></div>
+      <div class="projects" id="projects"></div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2>Daftar Tanaman</h2><p>Dua belas keahlian yang tumbuh di ladang, dan gunanya.</p></div>
+      <div class="crops" id="crops"></div>
+      <div class="ledger-row">
+        <button class="btn" id="replant" type="button">Tanam ulang ladang</button>
+        <span class="note" id="harvestNote"></span>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2>Kotak Surat</h2><p>Punya sistem atau API yang perlu digarap? Kirim kabar lewat salah satu jalur ini.</p></div>
+      <dl class="facts contact" id="contact"></dl>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ===== Isi portofolio: ubah bagian ini untuk memperbarui gim dan catatan sekaligus ===== */
+const KONTAK = [
+  {label:'Email',    teks:'yuda.karnaen11@gmail.com', url:'', salin:true},
+  {label:'LinkedIn', teks:'linkedin.com/in/yudakarnaen', url:'https://www.linkedin.com/in/yudakarnaen/'},
+  {label:'Domisili', teks:'Mataram, Indonesia', url:''},
+];
+const PROYEK = [
+  {id:'fcsds', nama:'FCSDS', tempat:'Kebun bibit', tahap:'tumbuh', label:'Tumbuh', crop:0, kerja:'Castellum Digital Indonesia',
+   ringkas:'Sistem untuk program Tuberkulosis, dikerjakan dari backend sampai frontend.',
+   rinci:'Backend dibangun dengan NestJS dan frontend dengan React.',
+   alat:['NestJS','React','Tuberkulosis']},
+  {id:'fellowship', nama:'Sistem Fellowship Program', tempat:'Kebun bibit', tahap:'tumbuh', label:'Tumbuh', crop:2, kerja:'Castellum Digital Indonesia',
+   ringkas:'Sistem untuk program fellowship, sedang dikembangkan di backend dan frontend.',
+   rinci:'Backend ditulis dengan Go.',
+   alat:['Go','Frontend']},
+  {id:'esismal', nama:'Esismal V3', tempat:'Lumbung', tahap:'panen', label:'Dipanen', crop:10, kerja:'Castellum Digital Indonesia',
+   ringkas:'Sistem Informasi Malaria. Yuda memimpin pengembangan backend dan frontend-nya.',
+   rinci:'Tersedia juga versi desktop dengan Electron yang bisa dipakai offline, dan terhubung dengan DHIS2 untuk pertukaran data.',
+   alat:['Malaria','Electron','DHIS2','Memimpin tim']},
+  {id:'silacak', nama:'SILACAK', tempat:'Lumbung', tahap:'panen', label:'Dipanen', crop:11, kerja:'Castellum Digital Indonesia',
+   ringkas:'Platform pelacakan data COVID-19, dirawat beserta dashboard KPI-nya.',
+   rinci:'Dashboard KPI dibuat sebagai ekstensi DHIS2. Untuk SILACAK V3, sistem pelacakan kontak berbasis DHIS2, Yuda membuat formulir pendaftaran mandiri dan merawat aplikasinya.',
+   alat:['COVID-19','DHIS2','Dashboard KPI']},
+  {id:'dhs', nama:'DigiHealthSpace', tempat:'Lumbung', tahap:'panen', label:'Dipanen', crop:3, kerja:'Castellum Digital Indonesia',
+   ringkas:'DHS Indonesia, platform belajar DHIS2. Yuda memimpin pengembangan backend-nya.',
+   rinci:'Platform ini menjadi tempat belajar DHIS2 di Indonesia.',
+   alat:['Memimpin backend','DHIS2']},
+  {id:'pos', nama:'Sistem POS', tempat:'Lumbung', tahap:'panen', label:'Dipanen', crop:1, kerja:'Lumbung Inovasi',
+   ringkas:'REST API untuk sistem kasir dengan unit test, ditambah dashboard web.',
+   rinci:'API dibangun dengan Express.js dan didokumentasikan di Postman. Dashboard web memakai React.',
+   alat:['Express.js','React','Postman','Unit test']},
+  {id:'rsia', nama:'Sistem Rumah Sakit', tempat:'Lumbung', tahap:'panen', label:'Dipanen', crop:4, kerja:'RSIA Permata Hati Mataram',
+   ringkas:'Pencarian rekam medis yang cepat dan dashboard ketersediaan tempat tidur real-time.',
+   rinci:'Dikerjakan sebagai frontend developer di RSIA Permata Hati Mataram.',
+   alat:['Rekam medis','Real-time','Frontend']},
+  {id:'satusehat', nama:'Interoperabilitas EMR ke SATUSEHAT', tempat:'Lumbung', tahap:'panen', label:'Dipanen', crop:7, kerja:'Castellum Digital Indonesia',
+   ringkas:'Rekam medis elektronik tersambung ke SATUSEHAT untuk kasus TB, di bawah proyek CHISU.',
+   rinci:'Yuda merancang dan mengimplementasikan interoperabilitasnya, serta merawat lapisan mediator untuk pertukaran data.',
+   alat:['SATUSEHAT','EMR','Mediator','CHISU']},
+  {id:'dhis2', nama:'Integrasi ke DHIS2', tempat:'Lumbung', tahap:'panen', label:'Dipanen', crop:11, kerja:'Castellum Digital Indonesia',
+   ringkas:'Layanan API untuk pelaporan malaria dan integrasi sistem ASDK dengan DHIS2.',
+   rinci:'Layanan API mengalirkan data Sistem Pelaporan Malaria ke platform analitik berbasis DHIS2.',
+   alat:['DHIS2','API','ASDK','Malaria']},
+  {id:'hisp', nama:'Middleware Kesehatan Nasional', tempat:'Lumbung', tahap:'panen', label:'Dipanen', crop:9, kerja:'HISP Indonesia',
+   ringkas:'Middleware DHIS2 yang menjadi bagian lapisan interoperabilitas sistem kesehatan nasional.',
+   rinci:'Dilengkapi logging dan monitoring supaya operasinya tetap andal.',
+   alat:['Middleware','Logging','Monitoring','DHIS2']},
+];
+const KEGIATAN = [
+  {judul:'Merancang REST API', isi:'Membangun API yang bisa berkembang dengan Express.js dan NestJS, mengikuti Clean Architecture, lalu mendokumentasikannya di Postman.', alat:['Express.js','NestJS','Go','Postman']},
+  {judul:'Memodelkan data', isi:'Merancang dan mengimplementasikan basis data serta model data yang kompleks.', alat:['PostgreSQL','MongoDB']},
+  {judul:'Membangun aplikasi', isi:'Mengerjakan aplikasi web responsif, dashboard admin, dashboard analitik dengan peta, dan aplikasi desktop yang bisa dipakai offline.', alat:['React','Next.js','Vite','Electron']},
+  {judul:'Menyambungkan sistem', isi:'Merancang interoperabilitas antara rekam medis elektronik, SATUSEHAT, dan DHIS2, serta merawat lapisan mediatornya.', alat:['SATUSEHAT','DHIS2','Middleware']},
+  {judul:'Menjaga sistem tetap andal', isi:'Menulis unit test, memasang logging dan monitoring, serta merawat aplikasi yang sudah berjalan.', alat:['Unit test','Logging','Monitoring']},
+  {judul:'Memimpin pengerjaan', isi:'Memimpin pengembangan backend dan frontend Esismal V3, serta backend DigiHealthSpace.', alat:['Backend','Frontend','Kerja tim']},
+];
+const KERJA = [
+  {waktu:'02/2021 - sekarang', peran:'Fullstack Developer', tempat:'Castellum Digital Indonesia', isi:'Membangun REST API dengan Express.js dan NestJS mengikuti Clean Architecture, merancang model data yang kompleks, serta aplikasi web dan dashboard analitik dengan peta memakai React.'},
+  {waktu:'08/2021 - 12/2023', peran:'Fullstack Developer', tempat:'HISP Indonesia', isi:'Membangun middleware yang terintegrasi dengan DHIS2, lengkap dengan logging dan monitoring, dan berperan penting dalam lapisan interoperabilitas sistem kesehatan nasional.'},
+  {waktu:'09/2020 - 02/2021', peran:'Fullstack Developer', tempat:'Lumbung Inovasi', isi:'Membangun RESTful API sistem POS dengan Express.js beserta unit test, dashboard web dengan React, dan dokumentasi API di Postman.'},
+  {waktu:'10/2019 - 12/2019', peran:'Frontend Developer', tempat:'RSIA Permata Hati Mataram', isi:'Membangun pencarian rekam medis yang cepat dan dashboard ketersediaan tempat tidur real-time.'},
+];
+const TANAMAN = [
+  {nama:'NestJS',     jenis:'Padi',     x:5,  y:15, bentuk:'padi',  catatan:'Backend FCSDS dan REST API dengan Clean Architecture.'},
+  {nama:'Node.js',    jenis:'Cabai',    x:7,  y:15, bentuk:'semak', warna:'#d8342a', catatan:'Dasar layanan backend, termasuk API POS dengan Express.js.'},
+  {nama:'Go',         jenis:'Jagung',   x:9,  y:15, bentuk:'jagung',catatan:'Backend Sistem Fellowship Program.'},
+  {nama:'React',      jenis:'Terong',   x:11, y:15, bentuk:'semak', warna:'#6b3a9c', catatan:'Aplikasi web responsif dan dashboard admin.'},
+  {nama:'TypeScript', jenis:'Tomat',    x:5,  y:17, bentuk:'semak', warna:'#ef5a36', catatan:'Bahasa bertipe untuk kode Node.js dan React.'},
+  {nama:'PostgreSQL', jenis:'Wortel',   x:7,  y:17, bentuk:'umbi',  catatan:'Basis data relasional untuk model data yang kompleks.'},
+  {nama:'MongoDB',    jenis:'Semangka', x:9,  y:17, bentuk:'melon', catatan:'Basis data dokumen.'},
+  {nama:'Docker',     jenis:'Nanas',    x:11, y:17, bentuk:'nanas', catatan:'Mengemas layanan dalam kontainer.'},
+  {nama:'Next.js dan Vite', jenis:'Kopi', x:5, y:19, bentuk:'semak', warna:'#8a2a1e', catatan:'Perkakas untuk membangun aplikasi web React.'},
+  {nama:'Git',        jenis:'Jeruk',    x:7,  y:19, bentuk:'semak', warna:'#f29a2a', catatan:'Mengelola versi kode dalam kerja tim.'},
+  {nama:'Electron',   jenis:'Bawang',   x:9,  y:19, bentuk:'umbi',  warna:'#a83a5c', catatan:'Aplikasi desktop offline Esismal V3.'},
+  {nama:'DHIS2',      jenis:'Labu',     x:11, y:19, bentuk:'melon', warna:'#d98a2a', catatan:'Integrasi, middleware, dan dashboard KPI SILACAK.'},
+];
+
+/* ===== Peta ===== */
+const T=16,MW=34,MH=24,PW=MW*T,PH=MH*T;
+const $=s=>document.querySelector(s);
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const solid=Array.from({length:MH},()=>Array(MW).fill(0));
+const G=Array.from({length:MH},()=>Array(MW).fill(0)); // 0 rumput 1 jalan 2 tanah 3 air 4 rumput gelap
+const setG=(v,x,y,w,h)=>{for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++)G[j][i]=v};
+const setS=(x,y,w=1,h=1)=>{for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++)solid[j][i]=1};
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+setG(1,2,12,30,2);setG(1,16,7,2,5);setG(1,6,9,1,3);setG(1,26,9,1,3);setG(1,26,14,1,1);setG(1,7,14,2,1);
+setG(2,4,15,8,5);setG(2,25,16,5,4);setG(3,14,16,8,6);
+for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(x<2||x>=MW-2||y<2||y>=MH-2){G[y][x]=4;solid[y][x]=1}
+setS(14,16,8,6);setS(13,2,8,5);setS(23,3,7,6);setS(4,3,6,6);setS(14,11);setS(20,14);setS(21,14);setS(25,14);
+for(let x=3;x<=12;x++){if(x!==7&&x!==8)setS(x,14);setS(x,20)}
+for(let y=14;y<=20;y++){setS(3,y);setS(12,y)}
+for(let x=24;x<=30;x++){if(x!==26)setS(x,15);setS(x,20)}
+for(let y=15;y<=20;y++){setS(24,y);setS(30,y)}
+const palms=[[22,9],[11,10],[31,8],[22,15],[31,14],[10,22]];
+palms.forEach(([x,y])=>setS(x,y));
+
+function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
+const worldC=mk(PW,PH),overC=mk(PW,PH);
+const W=worldC.getContext('2d'),O=overC.getContext('2d');
+const R=(c,x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(x,y,w,h)};
+function blob(c,cx,cy,r,col){c.fillStyle=col;for(let y=-r;y<=r;y++){const w=Math.floor(Math.sqrt(r*r-y*y));c.fillRect(cx-w,cy+y,w*2+1,1)}}
+function line(c,x0,y0,x1,y1,col,t=1){const d=Math.max(Math.abs(x1-x0),Math.abs(y1-y0),1);c.fillStyle=col;for(let i=0;i<=d;i++)c.fillRect(Math.round(x0+(x1-x0)*i/d),Math.round(y0+(y1-y0)*i/d),t,t)}
+
+function paintGround(){
+  const r=rng(11);
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
+    const px=x*T,py=y*T,g=G[y][x];
+    if(g===0||g===4){
+      R(W,px,py,T,T,g===4?'#3f8a3a':((x+y)%2?'#6ebc46':'#69b642'));
+      for(let k=0;k<4;k++){R(W,px+Math.floor(r()*15),py+Math.floor(r()*15),1,2,g===4?'#357a31':'#57a238')}
+      if(g===0&&r()<.25){R(W,px+Math.floor(r()*14),py+Math.floor(r()*14),2,1,'#8dd45e')}
+      if(g===0&&r()<.05){const fx=px+3+Math.floor(r()*9),fy=py+3+Math.floor(r()*9),cc=['#fff6d8','#f7d04a','#f08ab0'][Math.floor(r()*3)];R(W,fx-1,fy,3,1,cc);R(W,fx,fy-1,1,3,cc);R(W,fx,fy,1,1,'#c8452f')}
+    }else if(g===1){
+      R(W,px,py,T,T,'#d7b176');
+      for(let k=0;k<5;k++)R(W,px+Math.floor(r()*15),py+Math.floor(r()*15),2,1,r()<.5?'#c29a5f':'#e6c690');
+    }else if(g===2){
+      R(W,px,py,T,T,'#7a4f2d');
+      for(let k=0;k<4;k++)R(W,px,py+k*4+2,T,1,'#664024');
+      for(let k=0;k<3;k++)R(W,px+Math.floor(r()*15),py+Math.floor(r()*15),1,1,'#8f6239');
+    }else{R(W,px,py,T,T,'#4aa8d8')}
+  }
+  // tepi jalan dan kolam
+  for(let y=1;y<MH-1;y++)for(let x=1;x<MW-1;x++){
+    const px=x*T,py=y*T,g=G[y][x];
+    if(g===1){
+      if(G[y-1][x]===0)for(let i=0;i<T;i+=2)R(W,px+i,py,2,1+Math.floor(r()*2),'#6ebc46');
+      if(G[y+1][x]===0)for(let i=0;i<T;i+=2)R(W,px+i,py+14+Math.floor(r()*2),2,2,'#6ebc46');
+      if(G[y][x-1]===0)for(let i=0;i<T;i+=2)R(W,px,py+i,1+Math.floor(r()*2),2,'#6ebc46');
+      if(G[y][x+1]===0)for(let i=0;i<T;i+=2)R(W,px+14+Math.floor(r()*2),py+i,2,2,'#6ebc46');
+    }
+    if(g===3){
+      if(G[y-1][x]!==3)R(W,px,py,T,3,'#e3cf95');
+      if(G[y+1][x]!==3)R(W,px,py+13,T,3,'#e3cf95');
+      if(G[y][x-1]!==3)R(W,px,py,3,T,'#e3cf95');
+      if(G[y][x+1]!==3)R(W,px+13,py,3,T,'#e3cf95');
+    }
+  }
+  // teratai
+  [[16,17],[20,18],[18,20],[15,19]].forEach(([x,y],i)=>{blob(W,x*T+8,y*T+8,4,'#3f9a4a');R(W,x*T+8,y*T+4,1,4,'#4aa8d8');if(i%2===0){R(W,x*T+7,y*T+6,3,2,'#f08ab0');R(W,x*T+8,y*T+6,1,1,'#fff6d8')}});
+}
+function fenceH(c,x,y){const p=x*T,q=y*T;R(c,p,q+6,T,2,'#a06c36');R(c,p,q+10,T,2,'#8a5a2e');R(c,p+6,q+3,4,11,'#b9803f');R(c,p+6,q+3,4,1,'#d9a35c');R(c,p+9,q+3,1,11,'#6f4520')}
+function fenceV(c,x,y){const p=x*T,q=y*T;R(c,p+7,q,2,T,'#8a5a2e');R(c,p+6,q+3,4,10,'#b9803f');R(c,p+6,q+3,4,1,'#d9a35c');R(c,p+9,q+3,1,10,'#6f4520')}
+function paintFences(){
+  for(let x=3;x<=12;x++){if(x!==7&&x!==8)fenceH(W,x,14);fenceH(W,x,20)}
+  for(let y=15;y<=19;y++){fenceV(W,3,y);fenceV(W,12,y)}
+  for(let x=24;x<=30;x++){if(x!==26)fenceH(W,x,15);fenceH(W,x,20)}
+  for(let y=16;y<=19;y++){fenceV(W,24,y);fenceV(W,30,y)}
+}
+function paintHouse(){
+  const c=W; // rumah bilik bambu beratap joglo
+  R(c,212,76,120,36,'#c89b5a');
+  for(let y=76;y<112;y+=4)for(let x=212;x<332;x+=4)if((x+y)%8===0)R(c,x,y,4,4,'#b5874a');
+  R(c,212,76,4,36,'#6f4520');R(c,328,76,4,36,'#6f4520');R(c,264,76,3,36,'#6f4520');R(c,277,76,3,36,'#6f4520');
+  R(c,210,108,124,4,'#6f4520');
+  R(c,262,84,20,28,'#6f4520');R(c,264,86,16,26,'#8a5a2e');R(c,271,86,2,26,'#6f4520');R(c,276,98,2,2,'#f2b632');
+  R(c,216,78,32,22,'#6f4520');
+  [298].forEach(x=>{R(c,x-2,82,24,18,'#6f4520');R(c,x,84,20,14,'#2f4a5e');R(c,x+9,84,2,14,'#6f4520')});
+  for(let y=30;y<62;y++){const d=Math.round((y-30)*1.05),l=248-d,w=48+2*d;R(c,l,y,w,1,(y%4===0)?'#8f3f20':'#b3542e')}
+  for(let y=62;y<76;y++){const d=(y-62)*1,l=214-d,w=116+2*d;R(c,l,y,w,1,(y%4===0)?'#8f3f20':'#c1602f')}
+  R(c,200,76,144,3,'#6f3216');R(c,244,28,56,4,'#6f3216');R(c,240,26,4,4,'#6f3216');R(c,300,26,4,4,'#6f3216');
+  for(let x=214;x<330;x+=12)R(c,x,64,1,10,'#8f3f20');
+  // pot dan kendi
+  R(c,250,102,10,10,'#a4552c');blob(c,255,98,5,'#4c8f2f');R(c,290,102,10,10,'#a4552c');blob(c,295,98,5,'#4c8f2f');
+}
+function paintBarn(){
+  const c=W; // lumbung padi berpanggung
+  [376,396,444,462].forEach(x=>{R(c,x,120,5,24,'#5a3819');R(c,x,120,1,24,'#7c5228')});
+  blob(c,378,120,4,'#6e7a7d');blob(c,464,120,4,'#6e7a7d');
+  R(c,372,92,96,32,'#8a5a2e');for(let x=372;x<468;x+=8){R(c,x,92,1,32,'#6f4520')}
+  R(c,372,120,96,4,'#5a3819');
+  R(c,406,98,28,26,'#5a3819');R(c,408,100,24,24,'#a06c36');R(c,419,100,2,24,'#5a3819');
+  for(let y=124;y<144;y+=4)R(c,412,y,16,2,'#b9803f');R(c,412,124,2,20,'#8a5a2e');R(c,426,124,2,20,'#8a5a2e');
+  for(let y=46;y<92;y++){const d=Math.round((y-46)*1.1),l=412-d,w=16+2*d;R(c,l,y,w,1,(y%5===0)?'#a8863a':'#d0ae57')}
+  for(let k=0;k<10;k++){R(c,366+k*11,88,2,8,'#a8863a')}
+  R(c,408,44,24,4,'#7c5e24');
+  // ikat padi
+  [[352-4,134]].forEach(()=>{});
+  R(c,380,104,10,2,'#f2b632');R(c,381,106,8,8,'#d9a22a');R(c,450,104,10,2,'#f2b632');R(c,451,106,8,8,'#d9a22a');
+}
+function paintWorkshop(){
+  const c=W; // bengkel beratap seng
+  R(c,68,92,88,52,'#8a6238');for(let y=92;y<144;y+=6)R(c,68,y,88,1,'#6f4d2a');
+  R(c,92,114,24,30,'#3a2613');R(c,94,116,20,28,'#5a3819');
+  R(c,124,104,22,16,'#3a2613');R(c,126,106,18,12,'#2f4a5e');
+  for(let y=60;y<92;y++){const d=Math.round((y-60)*.5),l=76-d,w=72+2*d;R(c,l,y,w,1,'#7d93a3');}
+  for(let x=62;x<166;x+=6)R(c,x,60,1,32,'#5e7482');
+  R(c,84,72,14,8,'#a4552c');R(c,130,80,10,6,'#a4552c');
+  R(c,60,90,106,3,'#465b68');
+  // cerobong, peti, roda gigi
+  R(c,138,48,8,16,'#465b68');R(c,136,46,12,3,'#2f3f49');
+  R(c,72,132,14,12,'#b9803f');R(c,72,132,14,2,'#d9a35c');R(c,78,132,2,12,'#8a5a2e');
+  blob(c,106,102,5,'#c9d3d8');blob(c,106,102,2,'#5a3819');[[-7,0],[7,0],[0,-7],[0,7]].forEach(([a,b])=>R(c,106+a-1,102+b-1,3,3,'#c9d3d8'));
+}
+function paintProps(){
+  const c=W;
+  // gawang sandal di halaman rumah
+  [[348,138],[352,176]].forEach(([x,y])=>{R(c,x,y,3,6,'#3a6fb0');R(c,x+4,y+1,3,6,'#3a6fb0');R(c,x,y+1,3,1,'#7cc9e6');R(c,x+4,y+2,3,1,'#7cc9e6')});
+  // papan petunjuk
+  R(c,14*T+7,11*T+6,2,10,'#6f4520');R(c,14*T+1,11*T,14,9,'#b9803f');R(c,14*T+1,11*T,14,1,'#d9a35c');R(c,14*T+3,11*T+3,10,1,'#5a3819');R(c,14*T+3,11*T+5,7,1,'#5a3819');
+  // kotak surat
+  const mx=20*T,my=14*T;R(c,mx+7,my+6,2,10,'#6f4520');R(c,mx+2,my,12,8,'#c8452f');R(c,mx+2,my,12,2,'#e0654c');R(c,mx+4,my+4,8,1,'#5e1c12');R(c,mx+13,my+1,2,4,'#f2b632');
+  // peti kirim
+  const bx=21*T,by=14*T;R(c,bx+1,by+3,14,12,'#8a5a2e');R(c,bx,by+2,16,3,'#b9803f');R(c,bx+1,by+8,14,1,'#5a3819');R(c,bx+7,by+5,2,10,'#5a3819');
+  // plang bibit
+  const sx=25*T,sy=14*T;R(c,sx+7,sy+6,2,10,'#6f4520');R(c,sx+2,sy,12,8,'#b9803f');R(c,sx+2,sy,12,1,'#d9a35c');R(c,sx+7,sy+2,2,4,'#4c8f2f');R(c,sx+5,sy+3,2,1,'#8fd052');R(c,sx+9,sy+2,2,1,'#8fd052');
+  // bibit
+  for(let y=16;y<=18;y+=2)for(let x=25;x<=29;x++)drawCrop(W,TANAMAN[(x+y)%8],x*T+8,y*T+13,0,(x+y)%3?1:0);
+  // petak ladang
+  TANAMAN.forEach(t=>{blob(W,t.x*T+8,t.y*T+11,6,'#5f3b1f');R(W,t.x*T+2,t.y*T+11,12,2,'#8f6239')});
+}
+function palm(x,y,tall){
+  const px=x*T+8,py=y*T+14;
+  R(W,px-5,py-1,12,3,'rgba(0,0,0,.18)');
+  line(W,px,py,px+2,py-24,'#8a6238',3);line(W,px+2,py-1,px+4,py-24,'#6f4d2a',1);
+  const tx=px+3,ty=py-26;
+  [[-15,-4],[-13,6],[-7,-11],[7,-11],[14,-4],[14,7],[0,-14]].forEach(([a,b])=>{line(O,tx,ty,tx+a,ty+b,'#2f7a36',2);line(O,tx,ty-1,tx+a,ty+b-1,'#55a83c',1)});
+  blob(O,tx-2,ty+3,2,'#7c5228');blob(O,tx+3,ty+3,2,'#8a6238');
+}
+function tree(x,y){
+  const px=x*T+8,py=y*T+14;
+  R(W,px-2,py-10,5,12,'#6f4520');R(W,px-2,py-10,1,12,'#8a5a2e');
+  blob(O,px,py-16,12,'#2e6f33');blob(O,px-1,py-18,10,'#3f8a3a');blob(O,px-3,py-21,6,'#58a944');blob(O,px-5,py-23,2,'#7fc95a');
+}
+function paintTrees(){
+  const r=rng(5),list=[];
+  for(let y=0;y<MH;y+=2)for(let x=0;x<MW;x+=2){if(x<2||x>=MW-2||y<2||y>=MH-2)list.push([x+(y%4?1:0),y+1])}
+  list.push(...palms.map(p=>[p[0],p[1],1]));
+  list.sort((a,b)=>a[1]-b[1]);
+  list.forEach(([x,y,isP])=>{if(x>=MW)x=MW-1;if(isP||r()<.28)palm(x,y);else tree(x,y)});
+}
+
+/* ===== Sprite dinamis ===== */
+function drawCrop(c,t,x,y,time,stage=2){
+  const s=reduce?0:Math.round(Math.sin(time*2+x)*.7);
+  if(stage===0){R(c,x,y-5,1,5,'#3f8a3a');R(c,x-2+s,y-6,3,1,'#8fd052');R(c,x+1+s,y-4,2,1,'#8fd052');return}
+  if(stage===1){R(c,x,y-9,2,9,'#3f8a3a');blob(c,x-3+s,y-7,3,'#4c8f2f');blob(c,x+4+s,y-5,3,'#5fa83a');blob(c,x+1+s,y-10,2,'#8fd052');return}
+  switch(t.bentuk){
+    case 'padi':
+      for(let i=-4;i<=4;i+=2){R(c,x+i,y-9,1,9,'#8fa83a');R(c,x+i+s,y-13,2,5,'#f2b632');R(c,x+i+s+1,y-13,1,2,'#fbd66a')}
+      break;
+    case 'jagung':
+      R(c,x,y-16,2,16,'#3f8a3a');line(c,x,y-7,x-6+s,y-11,'#4c8f2f',2);line(c,x+1,y-10,x+7+s,y-14,'#5fa83a',2);
+      R(c,x+2,y-11,4,8,'#f2c63a');R(c,x+2,y-11,1,8,'#d9a22a');R(c,x+3,y-13,2,2,'#c8843a');
+      break;
+    case 'umbi':
+      for(let i=-3;i<=3;i+=3)line(c,x+i/2,y-5,x+i+s,y-13,'#4c8f2f',2);
+      R(c,x-3,y-5,7,5,t.warna||'#f08a2a');R(c,x-2,y,5,1,t.warna||'#d8701a');R(c,x-2,y-4,2,1,'#f7b160');
+      break;
+    case 'melon':
+      line(c,x-7,y-2,x+7,y-5,'#4c8f2f',1);blob(c,x-6+s,y-7,3,'#5fa83a');
+      blob(c,x+1,y-5,5,t.warna||'#2e7d3c');for(let i=-3;i<=3;i+=3)R(c,x+1+i,y-9,1,9,'#87c95a');
+      break;
+    case 'nanas':
+      for(let i=-4;i<=4;i+=2)line(c,x,y-9,x+i+s,y-16,'#4c8f2f',1);
+      R(c,x-3,y-9,7,9,'#e6a92e');for(let j=0;j<9;j+=3)for(let i=0;i<7;i+=3)R(c,x-3+i,y-9+j,1,1,'#a8761b');
+      break;
+    default:
+      blob(c,x,y-6,6,'#3f8a3a');blob(c,x-1,y-8,4,'#5fa83a');
+      c.fillStyle=t.warna;[[-3,-3],[3,-5],[0,-8],[3,-1]].forEach(([a,b])=>{c.fillRect(x+a,y+b,3,3)});
+  }
+}
+function drawFarmer(c,x,y,dir,step,moving,t){
+  const X=Math.round(x)-8,Y=Math.round(y)-20;
+  R(c,X+3,Y+19,10,2,'rgba(20,30,10,.3)');
+  const a=moving?(step%2?1:-1):0;
+  R(c,X+5,Y+13,2,a>0?6:5,'#2f3a63');R(c,X+9,Y+13,2,a<0?6:5,'#2f3a63');
+  R(c,X+5,Y+(a>0?18:17),3,2,'#3a2613');R(c,X+8,Y+(a<0?18:17),3,2,'#3a2613');
+  const bx=dir==='left'||dir==='right'?5:4,bw=dir==='left'||dir==='right'?6:8;
+  R(c,X+bx,Y+8,bw,6,'#c8452f');for(let j=9;j<14;j+=2)R(c,X+bx,Y+j,bw,1,'#e9d9a8');
+  if(dir==='left')R(c,X+7,Y+9+(a>0?1:0),2,4,'#a53422');
+  else if(dir==='right')R(c,X+7,Y+9+(a>0?1:0),2,4,'#a53422');
+  else{R(c,X+2,Y+9+(a>0?1:0),2,4,'#a53422');R(c,X+12,Y+9+(a<0?1:0),2,4,'#a53422');R(c,X+2,Y+13+(a>0?1:0),2,1,'#e0a877');R(c,X+12,Y+13+(a<0?1:0),2,1,'#e0a877')}
+  R(c,X+5,Y+4,6,5,dir==='up'?'#2c1c10':'#e0a877');
+  if(dir==='down'){R(c,X+6,Y+6,1,2,'#2c1c10');R(c,X+9,Y+6,1,2,'#2c1c10')}
+  if(dir==='left'){R(c,X+5,Y+6,1,2,'#2c1c10')}
+  if(dir==='right'){R(c,X+10,Y+6,1,2,'#2c1c10')}
+  // caping
+  [[0,2,'#efd285'],[1,6,'#e6c46e'],[2,10,'#e6c46e'],[3,14,'#d9b65a'],[4,16,'#b8923f']].forEach(([o,w,col])=>R(c,X+8-w/2,Y+o,w,1,col));
+  R(c,X+6,Y+2,2,1,'#b8923f');R(c,X+10,Y+3,2,1,'#b8923f');
+}
+function drawChicken(c,h,t){
+  const x=Math.round(h.x),y=Math.round(h.y),f=h.dx<0?-1:1,bob=h.moving&&!reduce?(Math.floor(t*8)%2):0;
+  R(c,x-4,y,8,1,'rgba(20,30,10,.3)');
+  R(c,x-1-bob,y-2,1,2,'#d98a2a');R(c,x+1+bob,y-2,1,2,'#d98a2a');
+  R(c,x-3,y-7,7,5,h.col);R(c,x-4*f-(f<0?-1:0)+(f>0?0:0),y-8,2,3,h.col);
+  const hx=x+(f>0?3:-5);R(c,hx,y-10,3,4,h.col);R(c,hx+1,y-12,1,2,'#c8452f');R(c,hx+(f>0?3:-1),y-9,1,1,'#f2b632');R(c,hx+(f>0?2:0),y-9,1,1,'#2c1c10');
+}
+
+let momWave=0;
+function drawKitchen(c,t,night){
+  const X=218,Y=80,still=reduce;
+  // dinding, rak, dan toples
+  R(c,X,Y,28,18,night?'#f4c863':'#e0b070');R(c,X,Y,28,1,night?'#d9a848':'#c4935a');
+  R(c,X+1,Y+4,10,1,'#6f4520');R(c,X+2,Y+1,2,3,'#c8452f');R(c,X+5,Y+2,2,2,'#3a6fb0');R(c,X+8,Y+1,2,3,'#f2f0e0');
+  // meja dan tungku
+  R(c,X,Y+14,28,4,'#6f4520');R(c,X,Y+14,28,1,'#8a5a2e');
+  R(c,X+17,Y+13,9,1,'#3a2613');
+  const fl=still?0:Math.floor(t*9)%2;R(c,X+18+fl,Y+15,2,2,'#f08a2a');R(c,X+22-fl,Y+15,2,2,'#f7cd5a');
+  // wajan dan uap
+  R(c,X+17,Y+11,9,2,'#2c2c30');R(c,X+18,Y+10,7,1,'#4a4a50');R(c,X+26,Y+11,2,1,'#2c2c30');
+  for(let i=0;i<3;i++){const a=still?i/3:((t*.5+i/3)%1),sy=Y+9-Math.round(a*8),sx=X+19+i*2+(still?0:Math.round(Math.sin(a*7+i)));c.globalAlpha=.8*(1-a);R(c,sx,sy,1,2,'#fffdf2');c.globalAlpha=1}
+  // ibu menghadap tungku
+  const mx=X+9,st=still?0:Math.round(Math.sin(t*5)*1.2);
+  R(c,mx,Y+8,7,6,'#9caf88');R(c,mx,Y+13,7,1,'#84997a');
+  R(c,mx+1,Y,5,1,'#4f6448');R(c,mx,Y+1,7,8,'#4f6448');R(c,mx,Y+9,5,2,'#4f6448');R(c,mx+1,Y+11,3,1,'#4f6448');R(c,mx+1,Y+1,3,1,'#627a59');R(c,mx+3,Y+3,3,4,'#d49a68');
+  R(c,mx+5,Y+4,1,1,'#2c1c10');R(c,mx+5,Y+6,1,1,'#a4552c');
+  // lengan mengaduk dan sendok kayu
+  R(c,mx+6,Y+9,2,1,'#84997a');R(c,mx+8,Y+9,1,1,'#d49a68');line(c,mx+9,Y+9,X+21+st,Y+11,'#8a5a2e');
+  // lengan melambai saat disapa
+  if(momWave>t){const w=Math.floor(t*6)%2;R(c,mx-1,Y+5,2,5,'#84997a');R(c,mx-2-w,Y+3,2,3,'#d49a68')}
+  else R(c,mx-1,Y+9,1,4,'#84997a');
+}
+function drawKid(c,k){
+  const X=Math.round(k.x),Y=Math.round(k.y),f=k.dir,a=k.moving?(Math.floor(k.walk)%2?1:-1):0;
+  R(c,X-4,Y,8,1,'rgba(20,30,10,.3)');
+  R(c,X-2,Y-2-(a>0?1:0),2,2+(a>0?1:0)-(a>0?1:0),'#c98f5e');R(c,X+1,Y-2-(a<0?1:0),2,2,'#c98f5e');
+  R(c,X-3,Y-4,6,2,'#3a6fb0');
+  R(c,X-3,Y-7,6,3,'#f2c63a');R(c,X-3,Y-6,6,1,'#fff6d8');
+  R(c,X-4,Y-7+(a>0?1:0),1,3,'#c98f5e');R(c,X+3,Y-7+(a<0?1:0),1,3,'#c98f5e');
+  R(c,X-3,Y-12,6,5,'#d49a68');R(c,X-3,Y-13,6,3,'#2c1c10');R(c,X-3*f-(f>0?0:1),Y-11,1,2,'#2c1c10');
+  R(c,X+(f>0?1:-2),Y-10,1,1,'#2c1c10');
+}
+function drawBall(c,b){
+  const X=Math.round(b.x),Y=Math.round(b.y),Z=Math.round(b.z);
+  R(c,X-2,Y,5,1,'rgba(20,30,10,.3)');
+  blob(c,X,Y-2-Z,2,'#fff6e4');R(c,X-1,Y-3-Z,1,1,'#2c1c10');R(c,X+1,Y-2-Z,1,1,'#2c1c10');
+}
+/* ===== Status ===== */
+const ctx=$('#game').getContext('2d');
+const P={x:16.5*T,y:9*T+12,dir:'down',step:0,walk:0,moving:false,path:null,then:null};
+const save={panen:[],moon:false};
+try{const s=JSON.parse(localStorage.getItem('kebun-yuda')||'null');if(s){save.panen=s.panen||[];save.moon=!!s.moon}}catch(e){}
+const persist=()=>{try{localStorage.setItem('kebun-yuda',JSON.stringify(save))}catch(e){}};
+const now=new Date();
+const hour=now.getHours(),month=now.getMonth();
+const hujan=month>=10||month<=2;
+const bursts=[];let time=0,moonT=save.moon?1:0,vw=300,vh=200,scale=2,cam={x:0,y:0};
+const hens=[{x:27*T,y:11*T,col:'#fff6e4'},{x:21*T,y:11*T,col:'#d98a4a'},{x:29*T,y:13*T,col:'#fff6e4'},{x:10*T,y:12*T,col:'#3a2613'}].map(h=>({...h,dx:1,tx:h.x,ty:h.y,wait:1,moving:false}));
+const kid={x:306,y:160,dir:1,moving:false,walk:0,wait:1,ball:{x:316,y:162,z:0,t:1,sx:316,sy:162,tx:316,ty:162,d:1}};
+const rain=Array.from({length:70},(_, i)=>({x:(i*47)%500,y:(i*83)%320,v:150+((i*13)%70)}));
+const stars=Array.from({length:60},(_, i)=>({x:(i*97)%600,y:(i*37)%90,p:i%7}));
+const flies=Array.from({length:18},(_, i)=>({x:60+(i*131)%430,y:150+(i*67)%200,p:i}));
+
+const PLACES={
+  dapur:{nama:'Dapur',x:14,y:7,hit:[13,4,3,3],verb:'Intip dapur',noTag:true,open(){momWave=time+3.5;say('Dapur Ibu',[['Ibu melambai dari jendela sambil mengaduk wajan: "Makan dulu, kerjanya bisa dilanjut nanti."','Wangi tumisan keluar dari jendela. "Sebentar lagi matang. Tolong panggil yang main bola itu, ya."','Ibu mencicipi masakannya, lalu menambah sedikit garam. "Pas. Jangan lupa istirahat."'][Math.floor(Math.random()*3)]])}},
+  rumah:{nama:'Rumah',x:16,y:7,hit:[13,2,8,6],verb:'Masuk rumah',tag:[272,28],open(){say('Rumah Yuda',['Ini rumah L Yuda Rahmani Karnaen, full stack developer dari Mataram dengan pengalaman 6+ tahun.','Sehari-hari ia membangun backend dengan Node.js, NestJS, dan Go, serta aplikasi web dengan React.','Sebagian besar karyanya untuk kesehatan publik Indonesia: malaria, COVID-19, TB, dan pertukaran data dengan SATUSEHAT dan DHIS2.'],[{label:'Baca riwayat kerja',fn(){$('#jobs').scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'})}}])}},
+  lumbung:{nama:'Lumbung',x:26,y:9,hit:[23,3,7,7],verb:'Buka lumbung',tag:[420,44],open(){place('Lumbung','Lumbung Hasil Panen','Lumbung ini menyimpan aplikasi yang sudah dibangun Yuda.')}},
+  bengkel:{nama:'Bengkel',x:6,y:9,hit:[4,3,6,7],verb:'Masuk bengkel',tag:[112,50],open(){say('Bengkel Development',['Di bengkel ini Yuda mengerjakan kesehariannya sebagai developer. Komputernya masih menyala.',...KEGIATAN.map(k=>k.judul+': '+k.isi)],[{label:'Baca di catatan',fn(){$('#kegiatan').scrollIntoView({behavior:reduce?'auto':'smooth'})}}])}},
+  bibit:{nama:'Kebun bibit',x:26,y:14,hit:[24,14,7,7],verb:'Lihat kebun bibit',tag:[408,222],open(){place('Kebun bibit','Kebun Bibit','Tanaman di sini masih tumbuh. Inilah yang sedang dikerjakan Yuda sekarang.')}},
+  ladang:{nama:'Ladang',hit:[3,14,10,7],tag:[128,222],field:true},
+  surat:{nama:'Kotak surat',x:20,y:13,hit:[20,14,2,1],verb:'Buka kotak surat',tag:[336,222],open(){
+    say('Kotak Surat',['Titip kabar untuk Yuda lewat email yuda.karnaen11@gmail.com atau LinkedIn linkedin.com/in/yudakarnaen.'],[{label:'Buka kontak',fn(){$('#contact').scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'})}}])}},
+  papan:{nama:'Papan petunjuk',x:14,y:12,hit:[14,11,1,1],verb:'Baca papan',noTag:true,open(){sayHelp()}},
+};
+function place(tempat,judul,intro){const ps=PROYEK.filter(p=>p.tempat===tempat);say(judul,[intro,...ps.map(p=>p.nama+': '+p.ringkas)],[{label:'Baca lengkap di catatan',fn(){$('#hasil').scrollIntoView({behavior:reduce?'auto':'smooth'})}}])}
+function sayHelp(){say('Papan Petunjuk',['Gerakkan petani dengan tombol panah atau WASD, atau ketuk tanah yang dituju.','Tekan E di dekat sesuatu untuk berinteraksi. Ladang menyimpan dua belas keahlian yang siap dipanen.'])}
+
+/* ===== Dialog ===== */
+const D={open:false,pages:[],i:0,c:0,typing:false,actions:[]};
+const dEl=$('#dialog'),dText=$('#dText'),dRow=$('#dRow'),dLive=$('#dLive');
+function say(title,pages,actions=[]){
+  D.open=true;D.pages=pages;D.i=0;D.actions=actions;$('#dTitle').textContent=title;dEl.hidden=false;showPage();
+}
+function showPage(){D.c=0;D.typing=!reduce;dLive.textContent=D.pages[D.i];dText.textContent=reduce?D.pages[D.i]:'';renderRow()}
+function renderRow(){
+  dRow.innerHTML='';
+  const last=D.i>=D.pages.length-1;
+  if(!D.typing)D.actions.forEach(a=>{const b=document.createElement('button');b.className='btn go';b.type='button';b.textContent=a.label;b.onclick=e=>{e.stopPropagation();closeD();a.fn()};dRow.append(b)});
+  const n=document.createElement('button');n.className='btn';n.type='button';n.textContent=last?'Tutup':'Lanjut ('+(D.i+1)+'/'+D.pages.length+')';n.onclick=e=>{e.stopPropagation();advance()};dRow.append(n);
+}
+function advance(){
+  if(D.typing){D.typing=false;dText.textContent=D.pages[D.i];renderRow();return}
+  if(D.i<D.pages.length-1){D.i++;showPage();return}
+  closeD();
+}
+function closeD(){D.open=false;dEl.hidden=true}
+dEl.addEventListener('click',e=>{if(e.target===dEl||e.target===dText)advance()});
+
+/* ===== Berjalan ===== */
+const tileOf=(x,y)=>[Math.floor(x/T),Math.floor((y-2)/T)];
+const isSolid=(tx,ty)=>tx<0||ty<0||tx>=MW||ty>=MH||solid[ty][tx]===1;
+function hits(x,y){for(const [a,b] of [[-5,-4],[5,-4],[-5,0],[5,0]]){if(isSolid(Math.floor((x+a)/T),Math.floor((y+b)/T)))return true}return false}
+function bfs(sx,sy,gx,gy){
+  if(isSolid(gx,gy)){let best=null,bd=1e9;for(let r=1;r<6&&!best;r++)for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){if(!isSolid(gx+i,gy+j)){const d=Math.hypot(i,j);if(d<bd){bd=d;best=[gx+i,gy+j]}}}if(!best)return null;gx=best[0];gy=best[1]}
+  const prev=new Map(),k=(x,y)=>x+','+y,q=[[sx,sy]];prev.set(k(sx,sy),null);
+  while(q.length){const [x,y]=q.shift();if(x===gx&&y===gy){const out=[];let c=[x,y];while(c){out.unshift(c);c=prev.get(k(c[0],c[1]))}return out}
+    for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+a,ny=y+b;if(!isSolid(nx,ny)&&!prev.has(k(nx,ny))){prev.set(k(nx,ny),[x,y]);q.push([nx,ny])}}}
+  return null;
+}
+function walkTo(gx,gy,then){const [sx,sy]=tileOf(P.x,P.y);const safe=isSolid(sx,sy)?[16,9]:[sx,sy];const path=bfs(safe[0],safe[1],gx,gy);P.path=path||null;P.then=then||null;if(path&&path.length<=1){P.path=null;if(then){P.then=null;then()}}}
+function goPlace(p){
+  closeD();
+  if(p.field){const c=TANAMAN.filter(t=>!save.panen.includes(t.nama));const [px,py]=tileOf(P.x,P.y);
+    if(!c.length){walkTo(7,13,()=>say('Ladang',['Ladang sudah dipanen semua. Tombol tanam ulang ada di catatan kebun.']));return}
+    c.sort((a,b)=>Math.hypot(a.x-px,a.y-py)-Math.hypot(b.x-px,b.y-py));walkTo(c[0].x,c[0].y,()=>harvest(c[0]));return}
+  walkTo(p.x,p.y,()=>p.open());
+}
+function harvest(t){
+  if(save.panen.includes(t.nama))return;
+  save.panen.push(t.nama);persist();updateBasket();
+  bursts.push({t,x:t.x*T+8,y:t.y*T+13,life:1});blip(660,.08);setTimeout(()=>blip(880,.1),90);
+  const full=save.panen.length===TANAMAN.length;
+  if(full){save.moon=true;persist();moonT=reduce?1:0;blip(1046,.25);
+    say('Panen Raya',['Semua tanaman sudah di keranjang, dan bulan purnama naik di atas kebun.','Dua belas keahlian ini siap dipakai untuk proyekmu. Titip kabar di kotak surat.'],[{label:'Ke kotak surat',fn(){goPlace(PLACES.surat)}}]);
+  }else say(t.nama+' · '+t.jenis,[t.catatan+' Sisa '+(TANAMAN.length-save.panen.length)+' tanaman di ladang.']);
+}
+function nearest(){
+  let best=null,bd=1e9;
+  const test=(x,y,lim,o)=>{const d=Math.hypot(x-P.x,y-P.y);if(d<lim&&d<bd){bd=d;best=o}};
+  Object.values(PLACES).forEach(p=>{if(!p.field)test(p.x*T+8,p.y*T+8,T*1.5,{verb:p.verb,run:()=>p.open()})});
+  TANAMAN.forEach(t=>{if(!save.panen.includes(t.nama))test(t.x*T+8,t.y*T+8,T*1.25,{verb:'Panen '+t.nama,run:()=>harvest(t)})});
+  test(kid.x,kid.y,T*1.4,{verb:'Sapa anak itu',run:()=>{kid.wait=3;blip(990,.06);say('Anak Kecil',[['Ayo main bola! Gawangnya dari sandal, jangan sampai kena pot.','Gol! Eh, tadi itu gol kan? Sandalnya geser sedikit.','Sebentar lagi pulang, kok. Satu gol lagi!'][Math.floor(Math.random()*3)]])}});
+  hens.forEach(h=>test(h.x,h.y,T*1.1,{verb:'Sapa ayam',run:()=>{blip(1200,.05);say('Ayam',[['Petok! Ayam ini juga sedang menunggu build selesai.','Petok petok. Ayam ini tidak punya komentar soal Clean Architecture.','Petok! Kata ayam, cek dulu log-nya.'][Math.floor(Math.random()*3)]])}}));
+  return best;
+}
+
+/* ===== Input ===== */
+const keys={};const DIRS={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
+function gameInView(){const r=$('#screen').getBoundingClientRect();return r.bottom>60&&r.top<innerHeight-60}
+addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const tag=(e.target.tagName||'').toLowerCase(),onCtl=tag==='button'||tag==='a'||tag==='input';
+  if(DIRS[e.key]){if(!gameInView())return;e.preventDefault();keys[DIRS[e.key]]=true;P.path=null;P.then=null;if(D.open)closeD();return}
+  if(e.key==='e'||e.key==='E'||((e.key===' '||e.key==='Enter')&&!onCtl)){
+    if(!gameInView())return;e.preventDefault();
+    if(D.open)advance();else{const n=nearest();if(n)n.run()}
+  }
+  if(e.key==='Escape'&&D.open)closeD();
+});
+addEventListener('keyup',e=>{if(DIRS[e.key])keys[DIRS[e.key]]=false});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false});
+$('#game').addEventListener('click',e=>{
+  const r=e.currentTarget.getBoundingClientRect();
+  const wx=(e.clientX-r.left)/r.width*vw+cam.x,wy=(e.clientY-r.top)/r.height*vh+cam.y,tx=Math.floor(wx/T),ty=Math.floor(wy/T);
+  closeD();
+  const crop=TANAMAN.find(t=>!save.panen.includes(t.nama)&&Math.abs(t.x-tx)<=0&&(t.y===ty||t.y-1===ty));
+  if(crop){walkTo(crop.x,crop.y,()=>harvest(crop));return}
+  for(const p of Object.values(PLACES)){if(p.field)continue;const [a,b,w,h]=p.hit;if(tx>=a&&tx<a+w&&ty>=b&&ty<b+h){walkTo(p.x,p.y,()=>p.open());return}}
+  if(Math.hypot(kid.x-wx,kid.y-6-wy)<11){walkTo(Math.floor(kid.x/T),Math.floor(kid.y/T),()=>{const n=nearest();if(n)n.run()});return}
+  const hen=hens.find(h=>Math.hypot(h.x-wx,h.y-5-wy)<10);
+  if(hen){walkTo(Math.floor(hen.x/T),Math.floor(hen.y/T),()=>{const n=nearest();if(n)n.run()});return}
+  walkTo(tx,ty);
+});
+$('#prompt').addEventListener('click',()=>{const n=nearest();if(n)n.run()});
+$('#skip').addEventListener('click',()=>$('#catatan').scrollIntoView({behavior:reduce?'auto':'smooth'}));
+
+/* tombol tempat dan label di peta */
+const tagsEl=$('#tags'),toolsEl=$('#tools');
+Object.entries(PLACES).forEach(([id,p])=>{
+  if(p.noTag)return;
+  const b=document.createElement('button');b.className='tag';b.type='button';b.textContent=p.nama;b.tabIndex=-1;
+  b.onclick=()=>goPlace(p);tagsEl.append(b);p.el=b;
+  const c=document.createElement('button');c.className='btn';c.type='button';c.textContent=p.nama;c.onclick=()=>goPlace(p);
+  toolsEl.insertBefore(c,toolsEl.querySelector('.spacer'));
+});
+
+/* ===== Suara: gamelan kecil dengan tangga nada slendro ===== */
+let AC=null,musicOn=false,musicTimer=null,musicStep=0;
+const SL={1:294,2:336,3:385,5:441,6:505,8:588,0:0};
+const TUNE=[3,5,6,5,3,2,1,2, 3,0,5,6,8,6,5,0, 6,5,3,5,2,3,1,0, 2,3,5,3,2,1,2,0];
+function tone(f,d,type='triangle',v=.08,when=0){if(!AC||!f)return;const t=AC.currentTime+when,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d)}
+function blip(f,d){if(musicOn)tone(f,d,'square',.035)}
+function tick(){const n=TUNE[musicStep%TUNE.length];tone(SL[n],.42,'triangle',.07);if(musicStep%4===0)tone(SL[n]*2,.18,'sine',.025,.14);if(musicStep%16===0)tone(73,1.6,'sine',.11);musicStep++}
+$('#music').addEventListener('click',e=>{
+  musicOn=!musicOn;const b=e.currentTarget;b.setAttribute('aria-pressed',musicOn);b.textContent='Musik: '+(musicOn?'nyala':'mati');
+  if(musicOn){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();AC.resume();musicTimer=setInterval(tick,300)}catch(err){}}
+  else clearInterval(musicTimer);
+});
+
+/* ===== Loop ===== */
+function resize(){
+  const s=$('#screen'),w=s.clientWidth,h=s.clientHeight;
+  scale=w<520?2:(w<1500?3:4);
+  while(w/scale>PW||h/scale>PH)scale++;
+  vw=Math.ceil(w/scale);vh=Math.ceil(h/scale);
+  const c=$('#game');c.width=vw;c.height=vh;ctx.imageSmoothingEnabled=false;
+}
+addEventListener('resize',resize);
+function update(dt){
+  time+=dt;
+  // Dialog: efek ketik
+  if(D.open&&D.typing){D.c+=dt*55;const txt=D.pages[D.i];dText.textContent=txt.slice(0,Math.floor(D.c));if(D.c>=txt.length){D.typing=false;renderRow()}}
+  // Pemain
+  let dx=0,dy=0;
+  if(keys.left)dx--;if(keys.right)dx++;if(keys.up)dy--;if(keys.down)dy++;
+  const sp=76;P.moving=false;
+  if(dx||dy){
+    const n=Math.hypot(dx,dy);const mx=dx/n*sp*dt,my=dy/n*sp*dt;
+    if(!hits(P.x+mx,P.y))P.x+=mx;if(!hits(P.x,P.y+my))P.y+=my;
+    P.dir=Math.abs(dx)>=Math.abs(dy)&&dx?(dx<0?'left':'right'):(dy<0?'up':'down');P.moving=true;
+  }else if(P.path&&P.path.length){
+    const [tx,ty]=P.path[0],gx=tx*T+8,gy=ty*T+12,ax=gx-P.x,ay=gy-P.y,d=Math.hypot(ax,ay);
+    if(d<1.6){P.x=gx;P.y=gy;P.path.shift();if(!P.path.length){P.path=null;const f=P.then;P.then=null;if(f)f()}}
+    else{const st=Math.min(d,sp*dt);P.x+=ax/d*st;P.y+=ay/d*st;P.dir=Math.abs(ax)>Math.abs(ay)?(ax<0?'left':'right'):(ay<0?'up':'down');P.moving=true}
+  }
+  if(P.moving){P.walk+=dt*8;P.step=Math.floor(P.walk)}
+  // Ayam
+  if(!reduce)hens.forEach(h=>{
+    h.moving=false;
+    if(h.wait>0){h.wait-=dt;return}
+    const ax=h.tx-h.x,ay=h.ty-h.y,d=Math.hypot(ax,ay);
+    if(d<1){h.wait=1+Math.random()*3;let nx,ny,tries=0;do{nx=h.x+(Math.random()*64-32);ny=h.y+(Math.random()*48-24);tries++}while(tries<8&&isSolid(Math.floor(nx/T),Math.floor(ny/T)));if(!isSolid(Math.floor(nx/T),Math.floor(ny/T))){h.tx=nx;h.ty=ny}return}
+    const nx=h.x+ax/d*22*dt,ny=h.y+ay/d*22*dt;if(isSolid(Math.floor(nx/T),Math.floor(ny/T))){h.tx=h.x;h.ty=h.y;return}h.x=nx;h.y=ny;h.dx=ax;h.moving=true;
+  });
+  // Anak bermain bola
+  kid.moving=false;
+  if(!reduce){
+    const B=kid.ball;
+    if(B.t<1){B.t=Math.min(1,B.t+dt/B.d);B.x=B.sx+(B.tx-B.sx)*B.t;B.y=B.sy+(B.ty-B.sy)*B.t;B.z=Math.abs(Math.sin(B.t*Math.PI*2))*(1-B.t)*11}
+    if(kid.wait>0)kid.wait-=dt;
+    else{
+      const ax=B.x-kid.x,ay=B.y-kid.y,d=Math.hypot(ax,ay);
+      if(d>7){kid.x+=ax/d*46*dt;kid.y+=ay/d*46*dt;kid.dir=ax<0?-1:1;kid.walk+=dt*10;kid.moving=true}
+      else if(B.t>=1){B.sx=B.x;B.sy=B.y;B.tx=292+Math.random()*52;B.ty=134+Math.random()*52;B.d=.25+Math.hypot(B.tx-B.x,B.ty-B.y)/75;B.t=0;kid.wait=.3+Math.random()*.9}
+    }
+  }
+  bursts.forEach(b=>b.life-=dt*.9);
+  for(let i=bursts.length-1;i>=0;i--)if(bursts[i].life<=0)bursts.splice(i,1);
+  if(save.moon&&moonT<1)moonT=Math.min(1,moonT+dt/3);
+  // Kamera
+  cam.x=vw>=PW?(PW-vw)/2:Math.max(0,Math.min(PW-vw,P.x-vw/2));
+  cam.y=vh>=PH?(PH-vh)/2:Math.max(0,Math.min(PH-vh,P.y-vh/2-8));
+  cam.x=Math.round(cam.x);cam.y=Math.round(cam.y);
+  // Prompt dan label
+  const n=(P.moving||D.open)?null:nearest(),pr=$('#prompt');
+  if(n){const html='<kbd>E</kbd>'+n.verb;if(pr.dataset.v!==n.verb){pr.innerHTML=html;pr.dataset.v=n.verb}pr.hidden=false}else if(!pr.hidden){pr.hidden=true;pr.dataset.v=''}
+  Object.values(PLACES).forEach(p=>{if(!p.el)return;const sx=(p.tag[0]-cam.x)*scale,sy=(p.tag[1]-cam.y)*scale;const vis=sx>-40&&sx<vw*scale+40&&sy>-10&&sy<vh*scale+30;
+    if(vis){p.el.hidden=false;p.el.style.transform='translate('+Math.round(sx)+'px,'+Math.round(sy)+'px) translate(-50%,-100%)'}else p.el.hidden=true});
+}
+function draw(){
+  const c=ctx;c.setTransform(1,0,0,1,0,0);R(c,0,0,vw,vh,'#3f8a3a');
+  c.translate(-cam.x,-cam.y);c.drawImage(worldC,0,0);
+  // kilau air
+  for(let i=0;i<34;i++){const x=14*T+6+(i*53)%(8*T-12),y=16*T+6+(i*29)%(6*T-12),s=reduce?0:Math.sin(time*1.6+i);if(s>-.2)R(c,x+Math.round(s*2),y,3+(i%3),1,'#a4dff2')}
+  // lampu rumah saat malam
+  const night=hour>=18||hour<6||moonT>0;
+  drawKitchen(c,time,night);
+  [298].forEach(x=>{if(night){R(c,x,84,20,14,'#f7cd5a');R(c,x+9,84,2,14,'#6f4520')}});
+  R(c,126,106,18,12,'#14242c');
+  const codeStep=reduce?0:Math.floor(time*2.5);
+  for(let i=0;i<4;i++){const n=i+codeStep,len=4+(n*7)%11,ind=(n*5)%3*2;R(c,127+ind,107+i*3,Math.min(len,16-ind),1,n%3===0?'#f2b632':n%3===1?'#8fd052':'#7cc9e6')}
+  if(!reduce)for(let i=0;i<4;i++){const age=(time*.45+i/4)%1,sx=142+Math.round(Math.sin(age*6+i)*2),sy=Math.round(45-age*20);blob(c,sx,sy,1+Math.round(age*2),'rgba(225,228,230,'+(.55*(1-age)).toFixed(2)+')')}
+  // entitas urut y
+  const list=[];
+  TANAMAN.forEach(t=>{if(!save.panen.includes(t.nama))list.push({y:t.y*T+13,d:()=>drawCrop(c,t,t.x*T+8,t.y*T+13,time)})});
+  hens.forEach(h=>list.push({y:h.y,d:()=>drawChicken(c,h,time)}));
+  list.push({y:kid.y,d:()=>drawKid(c,kid)},{y:kid.ball.y,d:()=>drawBall(c,kid.ball)});
+  list.push({y:P.y,d:()=>drawFarmer(c,P.x,P.y,P.dir,P.step,P.moving,time)});
+  list.sort((a,b)=>a.y-b.y).forEach(e=>e.d());
+  bursts.forEach(b=>{const up=(1-b.life)*24;c.globalAlpha=Math.max(0,b.life);drawCrop(c,b.t,b.x,Math.round(b.y-up),time);for(let i=0;i<6;i++){const a=i/6*6.28,ra=(1-b.life)*16;R(c,Math.round(b.x+Math.cos(a)*ra),Math.round(b.y-6+Math.sin(a)*ra),2,2,'#f2b632')}c.globalAlpha=1});
+  c.drawImage(overC,0,0);
+  c.setTransform(1,0,0,1,0,0);
+  // Cuaca
+  if(hujan&&!reduce&&!moonT){R(c,0,0,vw,vh,'rgba(40,70,110,.12)');rain.forEach(d=>{const y=(d.y+time*d.v)%(vh+20)-10,x=(d.x-time*18+6000)%(vw+10);R(c,Math.round(x),Math.round(y),1,4,'rgba(200,232,250,.55)')})}
+  else if(hujan&&reduce&&!moonT){R(c,0,0,vw,vh,'rgba(40,70,110,.12)')}
+  // Waktu
+  let tint=null;
+  if(hour>=19||hour<5)tint='rgba(18,26,74,.42)';else if(hour>=17)tint='rgba(214,110,40,.2)';else if(hour<7)tint='rgba(130,100,170,.2)';
+  if(tint&&!moonT)R(c,0,0,vw,vh,tint);
+  if(moonT>0){
+    R(c,0,0,vw,vh,'rgba(12,18,62,'+(.5*Math.min(1,moonT*1.6)).toFixed(3)+')');
+    stars.forEach(s=>{const tw=reduce||Math.sin(time*2+s.p)>-.4;if(tw){c.globalAlpha=moonT;R(c,s.x%vw,s.y,1,1,'#fff6d8');c.globalAlpha=1}});
+    const mx=Math.round(vw*.72),my=Math.round(-34+moonT*(34+46));
+    c.globalAlpha=.1;blob(c,mx,my,44,'#fff2c0');blob(c,mx,my,36,'#fff2c0');c.globalAlpha=.16;blob(c,mx,my,29,'#fff2c0');c.globalAlpha=1;
+    blob(c,mx,my,24,'#fff2c0');blob(c,mx-5,my-5,6,'#efdd9f');blob(c,mx+8,my+2,4,'#efdd9f');blob(c,mx-3,my+10,3,'#efdd9f');blob(c,mx+6,my-11,2,'#efdd9f');
+    flies.forEach(f=>{const x=f.x+Math.sin(time*.8+f.p)*14-cam.x,y=f.y+Math.cos(time*1.1+f.p*2)*10-cam.y;if(reduce||Math.sin(time*3+f.p)>-.3)R(c,Math.round(x),Math.round(y),2,2,'#f6ee7a')});
+  }
+  // cahaya
+  if(tint==='rgba(18,26,74,.42)'||moonT>0){
+    c.globalCompositeOperation='lighter';
+    const glow=(x,y,r)=>{const gx=Math.round(x-cam.x),gy=Math.round(y-cam.y);c.globalAlpha=.1;blob(c,gx,gy,r,'#5a4518');blob(c,gx,gy,Math.round(r*.72),'#5a4518');blob(c,gx,gy,Math.round(r*.45),'#6a5220');c.globalAlpha=1};
+    glow(236,92,18);glow(308,92,18);glow(135,112,14);glow(P.x,P.y-10,20);
+    c.globalCompositeOperation='source-over';
+  }
+}
+let last=performance.now();
+function frame(n){const dt=Math.min(.05,(n-last)/1000);last=n;update(dt);draw();requestAnimationFrame(frame)}
+
+/* ===== Catatan ===== */
+const HARI=['Min','Sen','Sel','Rab','Kam','Jum','Sab'],BULAN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+function updateClock(){const d=new Date(),h=String(d.getHours()).padStart(2,'0'),m=String(d.getMinutes()).padStart(2,'0');$('#hudDate').textContent=HARI[d.getDay()]+' '+d.getDate()+' '+BULAN[d.getMonth()]+' · '+h+':'+m;$('#hudSeason').textContent=hujan?'Musim Hujan':'Musim Kemarau'}
+function updateBasket(){
+  const n=save.panen.length,tot=TANAMAN.length;$('#hudBasket').textContent=n+'/'+tot;
+  document.querySelectorAll('.crop').forEach(el=>el.classList.toggle('done',save.panen.includes(el.dataset.n)));
+  $('#harvestNote').textContent=n===tot?'Semua sudah dipanen. Bulan purnama sudah naik di kebun.':n?n+' dari '+tot+' sudah masuk keranjang.':'Panen semuanya di ladang untuk melihat kejadian istimewa.';
+}
+function icon(canvas,t,stage,sz){canvas.width=sz;canvas.height=sz;const c=canvas.getContext('2d');for(let i=0;i<sz;i+=4)R(c,0,i+2,sz,1,'#664024');drawCrop(c,t,sz/2,sz-3,0,stage)}
+function buildLedger(){
+  const pe=$('#projects');
+  PROYEK.forEach(p=>{
+    const a=document.createElement('article');a.className='project';a.id='p-'+p.id;
+    const cv=document.createElement('canvas');icon(cv,TANAMAN[p.crop],p.tahap==='panen'?2:p.tahap==='tumbuh'?1:0,24);
+    const b=document.createElement('div');b.style.minWidth='0';
+    const h=document.createElement('h3');h.textContent=p.nama;
+    const st=document.createElement('span');st.className='stage '+p.tahap;st.textContent=p.label+' · '+p.tempat;const kj=document.createElement('span');kj.className='kerja';kj.textContent=p.kerja;
+    const p1=document.createElement('p');p1.textContent=p.ringkas;
+    const p2=document.createElement('p');p2.textContent=p.rinci;
+    const ul=document.createElement('ul');ul.className='chips';p.alat.forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.append(li)});
+    b.append(h,st,kj,p1,p2,ul);a.append(cv,b);pe.append(a);
+  });
+  const ae=$('#activities');
+  KEGIATAN.forEach(k=>{
+    const a=document.createElement('article');a.className='activity';
+    const h=document.createElement('h3');h.textContent=k.judul;
+    const p=document.createElement('p');p.textContent=k.isi;
+    const ul=document.createElement('ul');ul.className='chips';k.alat.forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.append(li)});
+    a.append(h,p,ul);ae.append(a);
+  });
+  const je=$('#jobs');
+  KERJA.forEach(k=>{
+    const a=document.createElement('article');a.className='job';
+    const t=document.createElement('time');t.textContent=k.waktu;
+    const b=document.createElement('div');b.style.minWidth='0';
+    const h=document.createElement('h3');h.textContent=k.peran;const sm=document.createElement('small');sm.textContent=k.tempat;h.append(sm);
+    const p=document.createElement('p');p.textContent=k.isi;b.append(h,p);a.append(t,b);je.append(a);
+  });
+  const ce=$('#crops');
+  TANAMAN.forEach(t=>{
+    const a=document.createElement('div');a.className='crop';a.dataset.n=t.nama;
+    const cv=document.createElement('canvas');icon(cv,t,2,24);
+    const b=document.createElement('div');b.style.minWidth='0';
+    const h=document.createElement('h3');h.textContent=t.nama;const s=document.createElement('small');s.textContent=t.jenis;h.append(s);
+    const p=document.createElement('p');p.textContent=t.catatan;b.append(h,p);a.append(cv,b);ce.append(a);
+  });
+  const ke=$('#contact');
+  KONTAK.forEach(k=>{
+    const d=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k.label;
+    if(k.url){const a=document.createElement('a');a.href=k.url;a.target='_blank';a.rel='noopener';a.textContent=k.teks;dd.append(a)}
+    else dd.textContent=k.teks;
+    if(k.salin){const c=document.createElement('button');c.className='btn copy';c.type='button';c.textContent='Salin';
+      c.onclick=()=>{const done=()=>{c.textContent='Tersalin';setTimeout(()=>c.textContent='Salin',1500)};
+        const pick=()=>{const r=document.createRange();r.selectNodeContents(dd.firstChild.parentNode);const sel=getSelection();sel.removeAllRanges();sel.addRange(r)};
+        try{navigator.clipboard.writeText(k.teks).then(done,pick)}catch(e){pick()}};
+      dd.append(c)}
+    d.append(dt,dd);ke.append(d);
+  });
+}
+$('#replant').addEventListener('click',()=>{save.panen=[];save.moon=false;moonT=0;persist();updateBasket()});
+
+paintGround();paintFences();paintHouse();paintBarn();paintWorkshop();paintProps();paintTrees();
+buildLedger();updateClock();updateBasket();setInterval(updateClock,20000);
+resize();
+say('Selamat Datang',['Selamat datang di Kebun Yuda. Proyek Yuda ada di bangunan, keahliannya tumbuh di ladang.','Gerakkan petani dengan tombol panah atau WASD, atau ketuk tanah yang dituju. Tekan E di dekat sesuatu untuk berinteraksi.']);
+update(0);draw();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
